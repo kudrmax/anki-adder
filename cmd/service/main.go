@@ -5,14 +5,10 @@ import (
 
 	"github.com/atselvan/ankiconnect"
 
-	"github.com/AlekSi/pointer"
-
-	"my/addToAnki/internal/models"
 	"my/addToAnki/internal/services/anki"
 )
 
 func main() {
-
 	ankiConnectClient := ankiconnect.NewClient()
 	restErr := ankiConnectClient.Ping()
 	if restErr != nil {
@@ -25,22 +21,12 @@ func main() {
 }
 
 func do(ankiService *anki.Service) {
-	deck := "Default"
-	words := []models.Word{
-		{
-			ModelName: "Main",
-			Data: models.WordData{
-				Sentence: pointer.To("Слово 1"),
-				//Target:   nil,
-				Meaning: pointer.To("Описание"),
-				//IPA:      nil,
-				//Image:    nil,
-				//Sound:    nil,
-			},
-		},
-	}
-
-	err := ankiService.AddWords(deck, words)
+	err := ankiService.AddNotes("Default", "Main", []map[string]string{{
+		"Sentence": "Слово",
+		"Meaning":  "Слово",
+		"IPA":      "Слово",
+		"Target":   "Слово",
+	}})
 	if err != nil {
 		panic(err)
 	}

@@ -20,8 +20,17 @@ func New(ankiConnectClient *ankiconnect.Client) *Service {
 	}
 }
 
-func (s *Service) AddWords(deck string, words []models.Word) error {
-	if len(words) == 0 {
+func (s *Service) AddNotes(deck, noteModel string, notesRow []map[string]string) error {
+	notes := make([]models.Note, 0, len(notesRow))
+	for _, field := range notesRow {
+		notes = append(notes, field)
+	}
+
+	return s.addNotes(deck, noteModel, notes)
+}
+
+func (s *Service) addNotes(deck, noteModel string, notes []models.Note) error {
+	if len(notes) == 0 {
 		return nil
 	}
 
@@ -37,18 +46,14 @@ func (s *Service) AddWords(deck string, words []models.Word) error {
 		return fmt.Errorf("колода %s не найдена среди колод", deck)
 	}
 
-	for _, word := range words {
-		wordMap := word.Map()
-
-		note := ankiconnect.Note{
+	for _, note := range notes {
+		respError = s.client.Notes.Add(ankiconnect.Note{
 			DeckName:  deck,
-			ModelName: word.ModelName,
-			Fields:    ankiconnect.Fields(wordMap),
-		}
-
-		respError = s.client.Notes.Add(note)
+			ModelName: noteModel,
+			Fields:    ankiconnect.Fields(note),
+		})
 		if respError != nil {
-			return fmt.Errorf("ошибка при добавлении слова %s в колоду: %s", word.Sentence(), Error(respError))
+			return fmt.Errorf("ошибка при добавлении слова в колоду: %s", Error(respError))
 		}
 	}
 
