@@ -20,16 +20,7 @@ func New(ankiConnectClient *ankiconnect.Client) *Service {
 	}
 }
 
-func (s *Service) AddNotes(deck, noteModel string, notesRow []map[string]string) error {
-	notes := make([]models.Note, 0, len(notesRow))
-	for _, field := range notesRow {
-		notes = append(notes, field)
-	}
-
-	return s.addNotes(deck, noteModel, notes)
-}
-
-func (s *Service) addNotes(deck, noteModel string, notes []models.Note) error {
+func (s *Service) AddNotes(deck, noteModel string, notes []models.Note) error {
 	if len(notes) == 0 {
 		return nil
 	}
