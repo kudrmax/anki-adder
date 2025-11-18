@@ -1,0 +1,9 @@
+# anki-adder config
+deck: "Default"
+noteModel: "Main"
+fields: [
+  "Sentence",
+  "Meaning",
+  "Target",
+  "IPA",
+]

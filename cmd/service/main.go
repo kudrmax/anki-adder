@@ -1,45 +1,92 @@
 package main
 
 import (
-	"github.com/atselvan/ankiconnect"
+	"flag"
+	"os"
+	"path/filepath"
+	"runtime"
 
-	"my/addToAnki/internal/models"
+	"github.com/atselvan/ankiconnect"
+	"github.com/privatesquare/bkst-go-utils/utils/errors"
+
 	"my/addToAnki/internal/services/anki"
-	"my/addToAnki/internal/services/converters/anki/notes_from_csv"
+	"my/addToAnki/internal/services/anki_adder"
+	"my/addToAnki/internal/services/config"
 )
 
 func main() {
 	ankiConnectClient := ankiconnect.NewClient()
 	restErr := ankiConnectClient.Ping()
 	if restErr != nil {
-		panic(restErr)
+		panic(errors.New("failed connecting to AnkiConnect"))
 	}
 
-	ankiService := anki.New(ankiConnectClient)
-	_ = ankiService
+	configPath := "config.yaml" // TODO временно, заменить на конфиг лежащий где-то вне
+	cfg, err := config.Parse(configPath)
+	if err != nil {
+		panic(err)
+	}
+
+	ankiService, err := anki.New(ankiConnectClient, anki.Config{
+		Deck:      cfg.Deck,
+		NoteModel: cfg.NoteModel,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = run(ankiService)
+	if err != nil {
+		panic(err)
+	}
 }
 
-func doFromCSV(ankiService *anki.Service) {
-	path := "data.csv"
-	notes, err := notes_from_csv.NotesFromCSV(path)
+func run(ankiService *anki.Service) error {
+	flagFrom := flag.String("from", "", "path to file for import")
+	flagFromClipboard := flag.Bool("from_clipboard", false, "import from clipboard")
+	flag.Parse()
+
+	ankiAdder, err := getAnkiAdderService(ankiService, flagFrom, flagFromClipboard)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	err = ankiService.AddNotes("Default", "Main", notes)
-	if err != nil {
-		panic(err)
+	return ankiAdder.AddNotes()
+}
+
+func getAnkiAdderService(ankiService *anki.Service, filePath *string, fromClipboard *bool) (anki_adder.IAnkiAdder, error) {
+	switch {
+	case filePath != nil && *filePath != "":
+		return anki_adder.NewAnkiAdderFromCSV(ankiService, *filePath), nil
+	case fromClipboard != nil && *fromClipboard:
+		return anki_adder.NewAnkiAdderFromClipboard(ankiService), nil
+	default:
+		return nil, errors.New("invalid flags")
 	}
 }
 
-func doTestData(ankiService *anki.Service) {
-	err := ankiService.AddNotes("Default", "Main", []models.Note{{
-		"Sentence": "Слово",
-		"Meaning":  "Слово",
-		"IPA":      "Слово",
-		"Target":   "Слово",
-	}})
-	if err != nil {
-		panic(err)
+func getConfigPath() (string, error) {
+	var baseConfigDir string
+	var err error
+
+	switch {
+	case runtime.GOOS == "windows":
+		baseConfigDir, err = os.UserConfigDir()
+		if err != nil {
+			return "", err
+		}
+	default:
+		if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
+			baseConfigDir = xdg
+		} else {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return "", err
+			}
+			baseConfigDir = filepath.Join(home, ".config")
+		}
 	}
+
+	appDir := filepath.Join(baseConfigDir, "anki-adder")
+	return filepath.Join(appDir, "config.yaml"), nil
 }

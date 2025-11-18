@@ -12,15 +12,32 @@ import (
 
 type Service struct {
 	client *ankiconnect.Client
+	cfg    Config
 }
 
-func New(ankiConnectClient *ankiconnect.Client) *Service {
-	return &Service{
+func New(ankiConnectClient *ankiconnect.Client, config Config) (*Service, error) {
+	s := &Service{
 		client: ankiConnectClient,
 	}
+
+	err := s.updateConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return s, nil
 }
 
-func (s *Service) AddNotes(deck, noteModel string, notes []models.Note) error {
+func (s *Service) updateConfig(cfg Config) error {
+	if !cfg.IsValid() {
+		return errors.New("некорректная конфигурация сервиса anki")
+	}
+
+	s.cfg = cfg
+	return nil
+}
+
+func (s *Service) AddNotes(notes []models.Note) error {
 	if len(notes) == 0 {
 		return nil
 	}
@@ -33,14 +50,14 @@ func (s *Service) AddNotes(deck, noteModel string, notes []models.Note) error {
 		return errors.New("колоды не найдены")
 	}
 
-	if !slices.Contains(*decks, deck) {
-		return fmt.Errorf("колода %s не найдена среди колод", deck)
+	if !slices.Contains(*decks, s.cfg.Deck) {
+		return fmt.Errorf("колода %s не найдена среди колод", s.cfg.Deck)
 	}
 
 	for _, note := range notes {
 		respError = s.client.Notes.Add(ankiconnect.Note{
-			DeckName:  deck,
-			ModelName: noteModel,
+			DeckName:  s.cfg.Deck,
+			ModelName: s.cfg.NoteModel,
 			Fields:    ankiconnect.Fields(note),
 		})
 		if respError != nil {
