@@ -3,8 +3,10 @@ module my/addToAnki
 go 1.25.0
 
 require (
+	github.com/atotto/clipboard v0.1.4
 	github.com/atselvan/ankiconnect v1.1.1
 	github.com/privatesquare/bkst-go-utils v1.5.4
+	gopkg.in/yaml.v2 v2.2.8
 )
 
 require (
@@ -28,6 +30,5 @@ require (
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 	golang.org/x/net v0.0.0-20211029224645-99673261e6eb // indirect
 	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
-	gopkg.in/yaml.v2 v2.2.8 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

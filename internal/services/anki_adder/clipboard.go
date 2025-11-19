@@ -1,15 +1,28 @@
 package anki_adder
 
 type AnkiAdderFromClipboard struct {
-	ankiAdderClient ankiAdderClient
+	ankiAdderClient  ankiAdderClient
+	csvNoteExtracter csvNoteExtracter
+	data             string
 }
 
-func NewAnkiAdderFromClipboard(ankiAdderClient ankiAdderClient) *AnkiAdderFromClipboard {
+func NewAnkiAdderFromClipboard(
+	ankiAdderClient ankiAdderClient,
+	csvNoteExtracter csvNoteExtracter,
+	data string,
+) *AnkiAdderFromClipboard {
 	return &AnkiAdderFromClipboard{
-		ankiAdderClient: ankiAdderClient,
+		ankiAdderClient:  ankiAdderClient,
+		csvNoteExtracter: csvNoteExtracter,
+		data:             data,
 	}
 }
 
 func (s *AnkiAdderFromClipboard) AddNotes() error {
-	return nil
+	notes, err := s.csvNoteExtracter.GetNotesFromCSVByString(s.data)
+	if err != nil {
+		return err
+	}
+
+	return s.ankiAdderClient.AddNotes(notes)
 }

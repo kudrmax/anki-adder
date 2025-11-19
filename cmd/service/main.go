@@ -6,12 +6,14 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/atotto/clipboard"
 	"github.com/atselvan/ankiconnect"
 	"github.com/privatesquare/bkst-go-utils/utils/errors"
 
-	"my/addToAnki/internal/services/anki"
 	"my/addToAnki/internal/services/anki_adder"
+	"my/addToAnki/internal/services/anki_client"
 	"my/addToAnki/internal/services/config"
+	"my/addToAnki/internal/services/csv_reader"
 )
 
 func main() {
@@ -27,7 +29,7 @@ func main() {
 		panic(err)
 	}
 
-	ankiService, err := anki.New(ankiConnectClient, anki.Config{
+	ankiService, err := anki_client.New(ankiConnectClient, anki_client.Config{
 		Deck:      cfg.Deck,
 		NoteModel: cfg.NoteModel,
 	})
@@ -41,7 +43,7 @@ func main() {
 	}
 }
 
-func run(ankiService *anki.Service) error {
+func run(ankiService *anki_client.Service) error {
 	flagFrom := flag.String("from", "", "path to file for import")
 	flagFromClipboard := flag.Bool("from_clipboard", false, "import from clipboard")
 	flag.Parse()
@@ -54,12 +56,19 @@ func run(ankiService *anki.Service) error {
 	return ankiAdder.AddNotes()
 }
 
-func getAnkiAdderService(ankiService *anki.Service, filePath *string, fromClipboard *bool) (anki_adder.IAnkiAdder, error) {
+func getAnkiAdderService(ankiService *anki_client.Service, filePath *string, fromClipboard *bool) (anki_adder.IAnkiAdder, error) {
 	switch {
 	case filePath != nil && *filePath != "":
-		return anki_adder.NewAnkiAdderFromCSV(ankiService, *filePath), nil
+		csvNoteExtractor := csv_reader.New()
+		return anki_adder.NewAnkiAdderFromCSV(ankiService, csvNoteExtractor, *filePath), nil
 	case fromClipboard != nil && *fromClipboard:
-		return anki_adder.NewAnkiAdderFromClipboard(ankiService), nil
+		data, err := clipboard.ReadAll()
+		if err != nil {
+			return nil, err
+		}
+
+		csvNoteExtractor := csv_reader.New()
+		return anki_adder.NewAnkiAdderFromClipboard(ankiService, csvNoteExtractor, data), nil
 	default:
 		return nil, errors.New("invalid flags")
 	}

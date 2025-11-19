@@ -1,23 +1,25 @@
 package anki_adder
 
-import (
-	"my/addToAnki/internal/services/converters/anki/notes_from_csv"
-)
-
 type AnkiAdderFromCSV struct {
-	ankiAdderClient ankiAdderClient
-	filePath        string
+	ankiAdderClient  ankiAdderClient
+	csvNoteExtracter csvNoteExtracter
+	filePath         string
 }
 
-func NewAnkiAdderFromCSV(ankiAdderClient ankiAdderClient, filePath string) *AnkiAdderFromCSV {
+func NewAnkiAdderFromCSV(
+	ankiAdderClient ankiAdderClient,
+	csvNoteExtracter csvNoteExtracter,
+	csvString string,
+) *AnkiAdderFromCSV {
 	return &AnkiAdderFromCSV{
 		ankiAdderClient: ankiAdderClient,
-		filePath:        filePath,
+		csvNoteExtracter: csvNoteExtracter,
+		filePath:        csvString,
 	}
 }
 
 func (s *AnkiAdderFromCSV) AddNotes() error {
-	notes, err := notes_from_csv.NotesFromCSV(s.filePath)
+	notes, err := s.csvNoteExtracter.GetNotesFromCSVByFilePath(s.filePath)
 	if err != nil {
 		return err
 	}

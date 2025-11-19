@@ -1,4 +1,4 @@
-package anki
+package anki_client
 
 import (
 	"errors"
