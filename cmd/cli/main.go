@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"log"
@@ -16,30 +16,36 @@ import (
 )
 
 func main() {
-	f, err := os.Open(getConfigPath())
-	if err != nil {
-		log.Fatal(err)
-	}
-	cfg, err := config.Parse(f)
+	cfg, err := getConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	ankiConnectExternalClient := ankiconnectExternal.NewClient()
-	restErr := ankiConnectExternalClient.Ping()
-	if restErr != nil {
-		log.Fatalf("failed connecting to AnkiConnect: %s", ankiconnect.NewClientError(restErr))
-	}
 	ankiConnectClient := ankiconnect.New(ankiConnectExternalClient)
 
 	ankiUseCase := anki_adder.NewUseCase(ankiConnectClient)
-	sentenceSaverUseCase := sentence_saver.New(santence_saver_repository.New(cfg.DBFile))
+	sentenceSaverUseCase := sentence_saver.New(santence_saver_repository.New(cfg.SentencesFilePath))
 
 	cliRunner := cli.NewCLI(cfg, ankiUseCase, sentenceSaverUseCase)
 	err = cliRunner.Run(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func getConfig() (config.Config, error) {
+	f, err := os.Open(getConfigPath())
+	if err != nil {
+		return config.Config{}, err
+	}
+
+	cfg, err := config.Parse(f)
+	if err != nil {
+		return config.Config{}, err
+	}
+
+	return cfg, nil
 }
 
 func getConfigPath() string {

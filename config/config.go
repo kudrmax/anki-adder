@@ -8,10 +8,10 @@ import (
 )
 
 type Config struct {
-	Deck      string   `yaml:"deck"`
-	NoteModel string   `yaml:"noteModel"`
-	Fields    []string `yaml:"fields"`
-	DBFile    string   `yaml:"db_file"`
+	Deck              string   `yaml:"deck"`
+	NoteModel         string   `yaml:"noteModel"`
+	Fields            []string `yaml:"fields"`
+	SentencesFilePath string   `yaml:"sentences_file_path"`
 }
 
 // Parse читает YAML-конфиг из io.Reader

@@ -7,4 +7,4 @@ fields: [
   "Target",
   "IPA",
 ]
-db_file: "/Users/mdmkudryashov/.config/anki-adder/sentences.txt"
+sentences_file_path: "/Users/mdmkudryashov/.config/anki-adder/sentences.txt"
