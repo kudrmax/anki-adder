@@ -1,4 +1,4 @@
-package anki_client
+package ankiconnect
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"github.com/privatesquare/bkst-go-utils/utils/errors"
 )
 
-func Error(respError *errors.RestErr) error {
+func NewClientError(respError *errors.RestErr) error {
 	if respError == nil {
 		return nil
 	}
