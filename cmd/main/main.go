@@ -7,11 +7,9 @@ import (
 	ankiconnectExternal "github.com/atselvan/ankiconnect"
 
 	"my/addToAnki/config"
-	"my/addToAnki/internal/domain/models"
 	"my/addToAnki/internal/infrastructure/ankiconnect"
-	"my/addToAnki/internal/infrastructure/source"
+	"my/addToAnki/internal/presentation/cli"
 	"my/addToAnki/internal/usecases/anki/anki_adder"
-	"my/addToAnki/internal/usecases/anki/csv_parser"
 )
 
 const (
@@ -30,8 +28,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_ = cfg
-
 	ankiConnectExternalClient := ankiconnectExternal.NewClient()
 	restErr := ankiConnectExternalClient.Ping()
 	if restErr != nil {
@@ -41,20 +37,9 @@ func main() {
 
 	ankiUseCase := anki_adder.NewUseCase(ankiConnectClient)
 
-	fileReaderGetter := source.NewFileReaderGetter(csvFilePath)
-	clipboardReaderGetter := source.NewClipboardReaderGetter()
-
-	fileCSVParser := csv_parser.New(cfg.Fields, fileReaderGetter)
-	clipboardCSVParser := csv_parser.New(cfg.Fields, clipboardReaderGetter)
-
-	fields, err := clipboardCSVParser.Parse()
+	cliRunner := cli.NewCLI(cfg, ankiUseCase)
+	err = cliRunner.Run(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = ankiUseCase.AddNotes(models.Deck(cfg.Deck), models.NoteModel(cfg.NoteModel), fields)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_ = fileCSVParser
 }
