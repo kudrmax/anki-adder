@@ -8,8 +8,10 @@ import (
 
 	"my/addToAnki/config"
 	"my/addToAnki/internal/infrastructure/ankiconnect"
+	santence_saver_repository "my/addToAnki/internal/infrastructure/santence_saver"
 	"my/addToAnki/internal/presentation/cli"
 	"my/addToAnki/internal/usecases/anki/anki_adder"
+	"my/addToAnki/internal/usecases/anki/sentence_saver"
 )
 
 const (
@@ -36,8 +38,9 @@ func main() {
 	ankiConnectClient := ankiconnect.New(ankiConnectExternalClient)
 
 	ankiUseCase := anki_adder.NewUseCase(ankiConnectClient)
+	santenceSaverUseCase := sentence_saver.New(santence_saver_repository.New(cfg.DBFile))
 
-	cliRunner := cli.NewCLI(cfg, ankiUseCase)
+	cliRunner := cli.NewCLI(cfg, ankiUseCase, santenceSaverUseCase)
 	err = cliRunner.Run(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)

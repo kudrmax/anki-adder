@@ -7,3 +7,4 @@ fields: [
   "Target",
   "IPA",
 ]
+db_file: "db.txt"
