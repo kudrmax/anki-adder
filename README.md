@@ -2,7 +2,7 @@
 
 ## Настройка
 
-1. Заполнить config.yaml и положить его по пути `~/.config/anki-adder/config.yaml`
+1. Заполнить config.yaml и положить его по пути `~/.config/anki-adder/config.yaml` (linux/mac; для windows не поддержано)
 2. Запустить Anki (иначе не будет работать)
 3. Поставить в Anki плагин AnkiConnect (иначе не будет работать)
 
