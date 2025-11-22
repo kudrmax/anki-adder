@@ -1,4 +1,4 @@
-# anki-adder config
+# anki-adder config example
 deck: "Default"
 noteModel: "Main"
 fields: [
@@ -7,4 +7,4 @@ fields: [
   "Target",
   "IPA",
 ]
-db_file: "db.txt"
+db_file: "/Users/mdmkudryashov/.config/anki-adder/sentences.txt"
