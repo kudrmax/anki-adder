@@ -1,4 +1,4 @@
-package main
+package gui
 
 import (
 	"fmt"
@@ -8,7 +8,13 @@ import (
 	"github.com/jroimartin/gocui"
 )
 
-func main() {
+type GUI struct {
+	g *gocui.Gui
+}
+
+func New() *GUI {
+	gui := &GUI{}
+
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
 		log.Panicln(err)
@@ -18,29 +24,34 @@ func main() {
 	g.Cursor = true
 	g.Mouse = true
 
-	g.SetManagerFunc(layout)
+	g.SetManagerFunc(gui.layout)
 
 	// Global quit keybinding: Ctrl+C
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
+	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, gui.quit); err != nil {
 		log.Panicln(err)
 	}
 
 	// Submit with Enter when focus is on the input line
-	if err := g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, submitInput); err != nil {
+	if err := g.SetKeybinding("input", gocui.KeyEnter, gocui.ModNone, gui.submitInput); err != nil {
 		log.Panicln(err)
 	}
 
 	// Submit with mouse click on the button
-	if err := g.SetKeybinding("button", gocui.MouseLeft, gocui.ModNone, submitInput); err != nil {
+	if err := g.SetKeybinding("button", gocui.MouseLeft, gocui.ModNone, gui.submitInput); err != nil {
 		log.Panicln(err)
 	}
 
-	if err := g.MainLoop(); err != nil && err != gocui.ErrQuit {
+	gui.g = g
+	return gui
+}
+
+func (gui *GUI) Run() {
+	if err := gui.g.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Panicln(err)
 	}
 }
 
-func layout(g *gocui.Gui) error {
+func (gui *GUI) layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 
 	// ---- Input view (centered) ----
@@ -93,7 +104,7 @@ func layout(g *gocui.Gui) error {
 
 // submitInput is called when the user presses Enter in the input
 // or clicks on the button with the mouse.
-func submitInput(g *gocui.Gui, v *gocui.View) error {
+func (gui *GUI) submitInput(g *gocui.Gui, v *gocui.View) error {
 	inputView, err := g.View("input")
 	if err != nil {
 		return err
@@ -103,7 +114,7 @@ func submitInput(g *gocui.Gui, v *gocui.View) error {
 	text := strings.TrimSpace(inputView.Buffer())
 
 	// Call your stub function
-	doSomething(text)
+	gui.doSomething(text)
 
 	// Clear input and reset cursor
 	inputView.Clear()
@@ -115,10 +126,10 @@ func submitInput(g *gocui.Gui, v *gocui.View) error {
 }
 
 // doSomething is a stub where you can put your own logic.
-func doSomething(s string) {
+func (gui *GUI) doSomething(s string) {
 	//log.Printf("doSomething called with: %q", s)
 }
 
-func quit(g *gocui.Gui, v *gocui.View) error {
+func (gui *GUI) quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
