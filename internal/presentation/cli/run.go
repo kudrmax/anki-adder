@@ -11,6 +11,7 @@ const (
 	commandAdd  = "add"
 	commandHelp = "help"
 	commandSave = "save"
+	commandGUI  = "gui"
 	commandLLM  = "llm"
 
 	helpText = "Use --help for help."
@@ -53,6 +54,8 @@ func (cli *CLI) Run(args []string) error {
 		return cli.commandAdd(args[1:])
 	case commandSave:
 		return cli.commandSave(args[1:])
+	case commandGUI:
+		return cli.commandGUI(args[1:])
 	case commandLLM:
 		return cli.llmGenerate(args[1:])
 	default:
