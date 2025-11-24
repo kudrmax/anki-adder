@@ -11,6 +11,7 @@ const (
 	commandAdd  = "add"
 	commandHelp = "help"
 	commandSave = "save"
+	commandLLM  = "llm"
 
 	helpText = "Use --help for help."
 )
@@ -19,13 +20,20 @@ type CLI struct {
 	cfg           config.Config
 	ankiAdder     ankiAdder
 	sentenceSaver sentenceSaver
+	llmGenerator  llmGenerator
 }
 
-func NewCLI(cfg config.Config, ankiAdder ankiAdder, sentenceSaver sentenceSaver) *CLI {
+func NewCLI(
+	cfg config.Config,
+	ankiAdder ankiAdder,
+	sentenceSaver sentenceSaver,
+	llmGenerator llmGenerator,
+) *CLI {
 	return &CLI{
 		cfg:           cfg,
 		ankiAdder:     ankiAdder,
 		sentenceSaver: sentenceSaver,
+		llmGenerator:  llmGenerator,
 	}
 }
 
@@ -45,6 +53,8 @@ func (cli *CLI) Run(args []string) error {
 		return cli.commandAdd(args[1:])
 	case commandSave:
 		return cli.commandSave(args[1:])
+	case commandLLM:
+		return cli.llmGenerate(args[1:])
 	default:
 		cli.printInvalid(args)
 		return nil
