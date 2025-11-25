@@ -42,7 +42,7 @@ func ProcessNext() string {
 func (cli *CLI) commandGUI(_ []string) error {
 	app := gui.NewApp(
 		cli.sentenceSaver,
-		DefaultGenerator{},
+		cli.noteGenerator,
 		DefaultNextProvider{},
 	)
 

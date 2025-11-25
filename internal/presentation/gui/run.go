@@ -83,9 +83,11 @@ func (a *App) createButtons() {
 	}
 
 	a.generateButton = makeButton("Сгенерировать", func() {
+		var err error
 		text := a.input.GetText()
 		if a.gen != nil {
-			text = a.gen.Generate(text)
+			text, err = a.gen.GenerateNote(text, "")
+			_ = err
 		}
 		a.dataView.SetText(text)
 		a.input.SetText("", true)

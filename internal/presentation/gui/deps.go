@@ -5,7 +5,7 @@ type Saver interface {
 }
 
 type Generator interface {
-	Generate(text string) string
+	GenerateNote(sentence, target string) (string, error)
 }
 
 type NextProvider interface {
