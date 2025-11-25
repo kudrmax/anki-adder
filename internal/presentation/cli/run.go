@@ -7,31 +7,31 @@ import (
 )
 
 const (
-	commandAdd  = "add"
-	commandHelp = "help"
-	commandSave = "save"
-	commandGUI  = "gui"
-	commandLLM  = "generate"
+	commandAdd      = "add"
+	commandHelp     = "help"
+	commandSave     = "save"
+	commandGUI      = "gui"
+	commandGenerate = "generate"
 )
 
 type CLI struct {
 	cfg           config.Config
 	ankiAdder     ankiAdder
 	sentenceSaver sentenceSaver
-	llmGenerator  llmGenerator
+	noteGenerator noteGenerator
 }
 
 func NewCLI(
 	cfg config.Config,
 	ankiAdder ankiAdder,
 	sentenceSaver sentenceSaver,
-	llmGenerator llmGenerator,
+	noteGenerator noteGenerator,
 ) *CLI {
 	return &CLI{
 		cfg:           cfg,
 		ankiAdder:     ankiAdder,
 		sentenceSaver: sentenceSaver,
-		llmGenerator:  llmGenerator,
+		noteGenerator: noteGenerator,
 	}
 }
 
@@ -51,8 +51,8 @@ func (cli *CLI) Run(args []string) error {
 		return cli.commandSave(args[1:])
 	case commandGUI:
 		return cli.commandGUI(args[1:])
-	case commandLLM:
-		return cli.llmGenerate(args[1:])
+	case commandGenerate:
+		return cli.commandGenerate(args[1:])
 	default:
 		return errors.New("bad command")
 	}

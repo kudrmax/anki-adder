@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "sentence": {
+      "type": "string"
+    },
+    "target": {
+      "type": "string"
+    },
+    "meaning": {
+      "type": "string"
+    },
+    "ipa": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "sentence",
+    "target",
+    "meaning",
+    "ipa"
+  ]
+}

@@ -1,17 +1,16 @@
 package cli
 
 import (
-	"context"
 	"errors"
 	"fmt"
 )
 
-func (cli *CLI) llmGenerate(args []string) error {
-	if len(args) != 1 {
-		return errors.New("Usage: llm <prompt>")
+func (cli *CLI) commandGenerate(args []string) error {
+	if len(args) != 2 {
+		return errors.New("generate command expects exactly 2 arguments: <sentence> <target>")
 	}
 
-	resp, err := cli.llmGenerator.Generate(context.Background(), args[0])
+	resp, err := cli.noteGenerator.GenerateNote(args[0], args[1])
 	if err != nil {
 		return fmt.Errorf("failed to generate text: %w", err)
 	}

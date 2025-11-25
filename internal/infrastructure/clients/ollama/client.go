@@ -31,26 +31,21 @@ func NewClient(model string, stream bool) (*Client, error) {
 		},
 	}, nil
 }
-
-func (c *Client) Generate(ctx context.Context, prompt string) (string, error) {
+func (c *Client) Generate(ctx context.Context, prompt string, format []byte) (string, error) {
 	var result string
 
-	for i := 0; i < 5; i += 1 {
-
-		err := c.client.Generate(ctx, &api.GenerateRequest{
-			Model:  c.config.model,
-			Stream: &c.config.stream,
-			Prompt: prompt,
-		}, func(res api.GenerateResponse) error {
-			result = res.Response
-			fmt.Print(res.Response)
-			return nil
-		},
-		)
-		if err != nil {
-			return "", fmt.Errorf("error on generate: %w", err)
-		}
-
+	err := c.client.Generate(ctx, &api.GenerateRequest{
+		Model:  c.config.model,
+		Stream: &c.config.stream,
+		Prompt: prompt,
+		Format: format,
+	}, func(res api.GenerateResponse) error {
+		result = res.Response
+		fmt.Print(res.Response)
+		return nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("error on generate: %w", err)
 	}
 
 	return result, nil

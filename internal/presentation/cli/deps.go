@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"context"
-
 	"my/addToAnki/internal/domain/models"
 )
 
@@ -15,7 +13,7 @@ type (
 		Save(sentence string) error
 	}
 
-	llmGenerator interface {
-		Generate(ctx context.Context, prompt string) (string, error)
+	noteGenerator interface {
+		GenerateNote(sentence, target string) (string, error)
 	}
 )
