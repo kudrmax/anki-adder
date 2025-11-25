@@ -1,45 +1,70 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
-	"time"
+	"os"
 
-	"github.com/teilomillet/gollm"
+	"github.com/ollama/ollama/api"
 )
 
 func main() {
-	// Load API key from environment variable
-	//apiKey := os.Getenv("OPENAI_API_KEY")
-	//if apiKey == "" {
-	//	log.Fatalf("OPENAI_API_KEY environment variable is not set")
-	//}
-
-	// Create a new LLM instance with custom configuration
-	llm, err := gollm.NewLLM(
-		gollm.SetOllamaEndpoint("http://127.0.0.1:11434"),
-		gollm.SetProvider("ollama"),
-		gollm.SetModel("llama2"),
-		//gollm.SetAPIKey("ollama-local"),
-		gollm.SetMaxTokens(200),
-		gollm.SetMaxRetries(1),
-		gollm.SetRetryDelay(time.Second*2),
-		gollm.SetLogLevel(gollm.LogLevelInfo),
-	)
-	if err != nil {
-		log.Fatalf("Failed to create LLM: %v", err)
-	}
-
 	ctx := context.Background()
 
-	// Create a basic prompt
-	prompt := gollm.NewPrompt("Explain the concept of 'recursion' in programming.")
-
-	// Generate a response
-	response, err := llm.Generate(ctx, prompt)
+	// Создаём клиента. Хост берётся из OLLAMA_HOST или по умолчанию (localhost:11434).
+	client, err := api.ClientFromEnvironment()
 	if err != nil {
-		log.Fatalf("Failed to generate text: %v", err)
+		log.Fatalf("create client: %v", err)
 	}
-	fmt.Printf("Response:\n%s\n", response)
+
+	model := "llama2" // поменяй на свою модель, например "llama3.2"
+	stream := true    // включаем стриминг, чтобы видеть ответ как в UI
+
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Println("Ollama REPL. Вводи промпт. 'exit', 'quit' или 'выход' — чтобы завершить.")
+
+	for {
+		fmt.Print("> ")
+
+		if !scanner.Scan() {
+			// EOF (Ctrl+D) или ошибка чтения
+			fmt.Println("\nEOF, выходим.")
+			break
+		}
+		prompt := scanner.Text()
+
+		if prompt == "exit" || prompt == "quit" || prompt == "выход" {
+			break
+		}
+		if prompt == "" {
+			continue
+		}
+
+		fmt.Println("Ответ:")
+
+		err = client.Generate(ctx, &api.GenerateRequest{
+			Model:  model,
+			Prompt: prompt,
+			Stream: &stream,
+			Options: map[string]any{
+				"num_predict": 500,
+			},
+		}, func(res api.GenerateResponse) error {
+			// Коллбек вызывается много раз — по мере генерации токенов.
+			fmt.Print(res.Response)
+			return nil
+		})
+		if err != nil {
+			log.Printf("generate error: %v\n", err)
+			continue
+		}
+
+		fmt.Println() // перевод строки после ответа
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Printf("stdin error: %v\n", err)
+	}
 }

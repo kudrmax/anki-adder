@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"my/addToAnki/internal/presentation/tviewgui"
+	"my/addToAnki/internal/presentation/gui"
 )
 
 type DefaultSaver struct{}
@@ -40,7 +40,7 @@ func ProcessNext() string {
 }
 
 func main() {
-	app := tviewgui.NewApp(
+	app := gui.NewApp(
 		DefaultSaver{},
 		DefaultGenerator{},
 		DefaultNextProvider{},

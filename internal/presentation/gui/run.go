@@ -1,182 +1,129 @@
 package gui
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/jroimartin/gocui"
-)
-
-const (
-	inputViewName  = "input"
-	buttonViewName = "button"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
 )
 
 type App struct {
-	gui   *gocui.Gui
+	app  *tview.Application
+	root *tview.Grid
+
+	input    *tview.TextArea
+	dataView *tview.TextView
+
+	generateButton *tview.Button
+	saveButton     *tview.Button
+	nextButton     *tview.Button
+
 	saver Saver
+	gen   Generator
+	next  NextProvider
 }
 
-func New(s Saver) (*App, error) {
-	g, err := gocui.NewGui(gocui.OutputNormal)
-	if err != nil {
-		return nil, err
-	}
-
-	app := &App{
-		gui:   g,
+func NewApp(s Saver, g Generator, n NextProvider) *App {
+	a := &App{
+		app:   tview.NewApplication().EnableMouse(true),
 		saver: s,
+		gen:   g,
+		next:  n,
 	}
 
-	g.Cursor = true
-	g.Mouse = true
-	g.SetManagerFunc(app.layout)
+	a.configureBorders()
+	a.build()
 
-	err = app.SetKeybindings()
-	if err != nil {
-		return nil, err
-	}
-
-	return app, nil
+	return a
 }
 
-// Run запускает главный цикл GUI.
 func (a *App) Run() error {
-	defer a.gui.Close()
-
-	if err := a.gui.MainLoop(); err != nil && err != gocui.ErrQuit {
-		return err
-	}
-
-	return nil
+	return a.app.SetRoot(a.root, true).SetFocus(a.input).Run()
 }
 
-func (a *App) SetKeybindings() error {
-	// Глобальный выход: Ctrl+C.
-	if err := a.gui.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-		a.gui.Close()
-		return err
-	}
-
-	// Submit: Ctrl+S в input.
-	if err := a.gui.SetKeybinding(inputViewName, gocui.KeyCtrlS, gocui.ModNone, a.submitInput); err != nil {
-		a.gui.Close()
-		return err
-	}
-
-	// Submit: клик мышкой по кнопке.
-	if err := a.gui.SetKeybinding(buttonViewName, gocui.MouseLeft, gocui.ModNone, a.submitInput); err != nil {
-		a.gui.Close()
-		return err
-	}
-
-	return nil
+func (a *App) configureBorders() {
+	tview.Borders.HorizontalFocus = tview.Borders.Horizontal
+	tview.Borders.VerticalFocus = tview.Borders.Vertical
+	tview.Borders.TopLeftFocus = tview.Borders.TopLeft
+	tview.Borders.TopRightFocus = tview.Borders.TopRight
+	tview.Borders.BottomLeftFocus = tview.Borders.BottomLeft
+	tview.Borders.BottomRightFocus = tview.Borders.BottomRight
 }
 
-// layout — менеджер раскладки, рисует input и кнопку.
-func (a *App) layout(g *gocui.Gui) error {
-
-	err := a.layoutInput(a.gui)
-	if err != nil {
-		return err
-	}
-
-	err = a.layoutButton(a.gui)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (a *App) build() {
+	a.createAreas()
+	a.createButtons()
+	a.createGrid()
 }
 
-func (a *App) layoutInput(g *gocui.Gui) error {
-	maxX, maxY := g.Size()
+func (a *App) createAreas() {
+	input := tview.NewTextArea()
+	input.SetTitle(" Ввод текста ")
+	input.SetTitleAlign(tview.AlignLeft)
+	input.SetBorder(true)
+	a.input = input
 
-	inputWidth := maxX - 2
-	inputHeight := 10
-	if inputWidth > maxX-2 {
-		inputWidth = maxX - 2
+	dataView := tview.NewTextView()
+	dataView.SetBorder(true)
+	dataView.SetTitle(" Данные ")
+	dataView.SetTitleAlign(tview.AlignLeft)
+	a.dataView = dataView
+}
+
+func (a *App) createButtons() {
+	styleButton := tcell.StyleDefault.Background(tcell.ColorBlack)
+
+	makeButton := func(label string, handler func()) *tview.Button {
+		btn := tview.NewButton(label)
+		btn.SetSelectedFunc(handler)
+		btn.SetBorder(true)
+		btn.SetStyle(styleButton)
+		btn.SetLabelColor(tcell.ColorWhite)
+		btn.SetLabelColorActivated(tcell.ColorDarkGray)
+		btn.SetBackgroundColorActivated(tcell.ColorBlack)
+		return btn
 	}
-	if inputHeight > maxY-2 {
-		inputHeight = maxY - 2
-	}
 
-	x0 := (maxX - inputWidth) / 2
-	x1 := x0 + inputWidth
-	y0 := 2
-	y1 := y0 + inputHeight
-
-	if v, err := g.SetView(inputViewName, x0, y0, x1, y1); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
+	a.generateButton = makeButton("Сгенерировать", func() {
+		text := a.input.GetText()
+		if a.gen != nil {
+			text = a.gen.Generate(text)
 		}
-		v.Title = " Input "
-		v.Editable = true
-		v.Editor = gocui.DefaultEditor
+		a.dataView.SetText(text)
+		a.input.SetText("", true)
+		a.app.SetFocus(a.input)
+	})
 
-		if _, err := g.SetCurrentView(inputViewName); err != nil {
-			return err
+	a.saveButton = makeButton("Сохранить", func() {
+		text := a.input.GetText()
+		if a.saver != nil {
+			a.saver.Save(text)
 		}
-	}
+		a.dataView.SetText("")
+		a.input.SetText("", true)
+		a.app.SetFocus(a.input)
+	})
 
-	return nil
-}
-
-// layout — менеджер раскладки, рисует input и кнопку.
-func (a *App) layoutButton(g *gocui.Gui) error {
-	maxX, maxY := g.Size()
-	btnWidth := 20
-	if btnWidth > maxX-2 {
-		btnWidth = maxX - 2
-	}
-
-	bx0 := (maxX - btnWidth) / 2
-	bx1 := bx0 + btnWidth
-	by0 := maxY/2 - 7/2 + 1 + 7
-	by1 := by0 + 2
-
-	if v, err := g.SetView(buttonViewName, bx0, by0, bx1, by1); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
+	a.nextButton = makeButton("Следующее предложение", func() {
+		var text string
+		if a.next != nil {
+			text = a.next.Next()
 		}
-		v.Frame = true
-		v.Editable = false
-
-		fmt.Fprintln(v, "   Submit (Ctrl+S)   ")
-	}
-
-	return nil
+		a.dataView.SetText("")
+		a.input.SetText(text, true)
+		a.app.SetFocus(a.input)
+	})
 }
 
-// submitInput — вызывается при Ctrl+S в input или клике по кнопке.
-func (a *App) submitInput(g *gocui.Gui, v *gocui.View) error {
-	inputView, err := g.View(inputViewName)
-	if err != nil {
-		return err
-	}
+func (a *App) createGrid() {
+	grid := tview.NewGrid().
+		SetRows(-1, -1, -1, -6).
+		SetColumns(-8, -2).
+		SetBorders(false)
 
-	// Берём весь буфер, включая переносы строк.
-	text := strings.TrimSpace(inputView.Buffer())
+	grid.AddItem(a.input, 0, 0, 3, 1, 3, 10, true)
+	grid.AddItem(a.generateButton, 0, 1, 1, 1, 1, 10, false)
+	grid.AddItem(a.saveButton, 1, 1, 1, 1, 1, 10, false)
+	grid.AddItem(a.nextButton, 2, 1, 1, 1, 1, 10, false)
+	grid.AddItem(a.dataView, 3, 0, 1, 2, 3, 10, false)
 
-	// Передаём текст внешнему Saver.
-	a.saver.Save(text)
-
-	// Очистить поле ввода и вернуть курсор в начало.
-	inputView.Clear()
-	if err := inputView.SetCursor(0, 0); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func convertCoords(leftX, upY, lenX, lenY int) (x0, y0, x1, y1 int) {
-	x0, y0 = leftX, upY
-	x1 = x0 + lenX
-	y1 = y0 + lenY
-	return
-}
-
-func quit(g *gocui.Gui, v *gocui.View) error {
-	return gocui.ErrQuit
+	a.root = grid
 }
