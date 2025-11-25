@@ -14,7 +14,7 @@ import (
 	"my/addToAnki/internal/presentation/cli"
 	"my/addToAnki/internal/usecases/anki/anki_adder"
 	"my/addToAnki/internal/usecases/anki/note_generator"
-	"my/addToAnki/internal/usecases/anki/sentence_saver"
+	"my/addToAnki/internal/usecases/sentence_saver"
 )
 
 func main() {
