@@ -2,6 +2,9 @@ package note_generator
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
 )
 
 type UseCase struct {
@@ -34,4 +37,20 @@ func (uc *UseCase) GenerateNote(sentence, target string) (string, error) {
 	prompt := promptTask + "\n\nInput:\n\nSentence: " + sentence + "\n\nTarget: " + target
 
 	return uc.generator.Generate(context.Background(), prompt, uc.format)
+}
+
+func (uc *UseCase) processResponse(resp string) (map[string]string, error) {
+	dec := json.NewDecoder(strings.NewReader(resp))
+
+	var raw map[string]any
+	if err := dec.Decode(&raw); err != nil {
+		return nil, fmt.Errorf("decode JSON: %w", err)
+	}
+
+	res := make(map[string]string, len(raw))
+	for k, v := range raw {
+		res[k] = fmt.Sprint(v)
+	}
+
+	return res, nil
 }
