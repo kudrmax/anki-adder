@@ -94,9 +94,7 @@ func (a *App) createButtons() {
 
 	a.saveButton = makeButton("Сохранить", func() {
 		text := a.input.GetText()
-		if a.saver != nil {
-			a.saver.Save(text)
-		}
+		_ = a.saver.Save(text)
 		a.dataView.SetText("")
 		a.input.SetText("", true)
 		a.app.SetFocus(a.input)

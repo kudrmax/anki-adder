@@ -1,8 +1,7 @@
 package cli
 
 import (
-	"fmt"
-	"os"
+	"errors"
 
 	"my/addToAnki/config"
 )
@@ -12,9 +11,7 @@ const (
 	commandHelp = "help"
 	commandSave = "save"
 	commandGUI  = "gui"
-	commandLLM  = "llm"
-
-	helpText = "Use --help for help."
+	commandLLM  = "generate"
 )
 
 type CLI struct {
@@ -42,13 +39,11 @@ func NewCLI(
 // args are the command line arguments without the executable name
 func (cli *CLI) Run(args []string) error {
 	if len(args) == 0 {
-		cli.printInvalid(args)
-		return nil
+		return errors.New("no args")
 	}
 
 	switch args[0] {
 	case commandHelp:
-		//return cli.commandHelp(args[1:])
 		return nil
 	case commandAdd:
 		return cli.commandAdd(args[1:])
@@ -59,14 +54,6 @@ func (cli *CLI) Run(args []string) error {
 	case commandLLM:
 		return cli.llmGenerate(args[1:])
 	default:
-		cli.printInvalid(args)
-		return nil
+		return errors.New("bad command")
 	}
-}
-
-func (cli *CLI) printInvalid(args []string) {
-	if len(args) == 0 {
-		fmt.Fprint(os.Stderr, "no agruments. ", helpText)
-	}
-	fmt.Fprintf(os.Stderr, "unknown agruments: %s\n\n%s", args, helpText)
 }

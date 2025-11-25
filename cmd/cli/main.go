@@ -9,7 +9,6 @@ import (
 
 	"my/addToAnki/config"
 	"my/addToAnki/internal/infrastructure/clients/ankiconnect"
-	"my/addToAnki/internal/infrastructure/clients/ollama"
 	santence_saver_repository "my/addToAnki/internal/infrastructure/db/santence_saver"
 	"my/addToAnki/internal/presentation/cli"
 	"my/addToAnki/internal/usecases/anki/anki_adder"
@@ -28,12 +27,12 @@ func main() {
 	ankiUseCase := anki_adder.NewUseCase(ankiConnectClient)
 	sentenceSaverUseCase := sentence_saver.New(santence_saver_repository.New(cfg.SentencesFilePath))
 
-	ollamaClient, err := ollama.NewClient("llama2", false)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//ollamaClient, err := ollama.NewClient("llama2", false)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 
-	cliRunner := cli.NewCLI(cfg, ankiUseCase, sentenceSaverUseCase, ollamaClient)
+	cliRunner := cli.NewCLI(cfg, ankiUseCase, sentenceSaverUseCase, nil)
 	err = cliRunner.Run(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)

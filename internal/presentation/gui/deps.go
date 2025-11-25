@@ -1,7 +1,7 @@
 package gui
 
 type Saver interface {
-	Save(text string)
+	Save(string) error
 }
 
 type Generator interface {
