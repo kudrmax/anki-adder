@@ -34,7 +34,10 @@ func main() {
 		ollamaClient = nil
 		log.Println("Failed to initialize ollama client. <generate> command won't work")
 	}
-	noteGeneratorUsecase := note_generator.New(ollamaClient)
+	noteGeneratorUsecase, err := note_generator.New(ollamaClient, cfg.Fields)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	cliRunner := cli.NewCLI(cfg, ankiUseCase, sentenceSaverUseCase, noteGeneratorUsecase)
 	err = cliRunner.Run(os.Args[1:])
