@@ -1,4 +1,4 @@
-package cli
+package main
 
 import (
 	"log"
@@ -8,10 +8,12 @@ import (
 	ankiconnectExternal "github.com/atselvan/ankiconnect"
 
 	"my/addToAnki/config"
-	"my/addToAnki/internal/infrastructure/ankiconnect"
-	santence_saver_repository "my/addToAnki/internal/infrastructure/santence_saver"
+	"my/addToAnki/internal/infrastructure/clients/ankiconnect"
+	"my/addToAnki/internal/infrastructure/clients/ollama"
+	santence_saver_repository "my/addToAnki/internal/infrastructure/db/santence_saver"
 	"my/addToAnki/internal/presentation/cli"
 	"my/addToAnki/internal/usecases/anki/anki_adder"
+	"my/addToAnki/internal/usecases/anki/note_generator"
 	"my/addToAnki/internal/usecases/anki/sentence_saver"
 )
 
@@ -27,7 +29,17 @@ func main() {
 	ankiUseCase := anki_adder.NewUseCase(ankiConnectClient)
 	sentenceSaverUseCase := sentence_saver.New(santence_saver_repository.New(cfg.SentencesFilePath))
 
-	cliRunner := cli.NewCLI(cfg, ankiUseCase, sentenceSaverUseCase)
+	ollamaClient, err := ollama.NewClient("llama2", false)
+	if err != nil {
+		ollamaClient = nil
+		log.Println("Failed to initialize ollama client. <generate> command won't work")
+	}
+	noteGeneratorUsecase, err := note_generator.New(ollamaClient, cfg.Fields)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cliRunner := cli.NewCLI(cfg, ankiUseCase, sentenceSaverUseCase, noteGeneratorUsecase)
 	err = cliRunner.Run(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)
