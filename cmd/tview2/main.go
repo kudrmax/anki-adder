@@ -1,54 +1,104 @@
 package main
 
 import (
+	"fmt"
+	"math/rand"
+
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 func main() {
-	app := tview.NewApplication().
-		EnableMouse(true) // <-- ВКЛЮЧАЕМ МЫШЬ
+	app := tview.NewApplication().EnableMouse(true)
 
-	// --- Строка 2: контейнер "Данные" ---
-	dataView := tview.NewTextView().
-		SetTextAlign(tview.AlignLeft)
-	dataView.SetBorder(true).
-		SetTitle("Данные")
+	tview.Borders.HorizontalFocus = tview.Borders.Horizontal
+	tview.Borders.VerticalFocus = tview.Borders.Vertical
+	tview.Borders.TopLeftFocus = tview.Borders.TopLeft
+	tview.Borders.TopRightFocus = tview.Borders.TopRight
+	tview.Borders.BottomLeftFocus = tview.Borders.BottomLeft
+	tview.Borders.BottomRightFocus = tview.Borders.BottomRight
 
-	// --- Строка 1: TextArea + кнопки ---
 	input := tview.NewTextArea()
-	input.SetBorder(true).
-		SetTitle("Ввод текста")
-	input.SetSize(3, 0) // высота 3 строки, ширина тянется Flex-ом
+	input.SetTitle(" Ввод текста ")
+	input.SetTitleAlign(tview.AlignLeft)
+	input.SetBorder(true)
 
-	// Кнопка 1: переносит текст в "Данные" и очищает ввод
-	button1 := tview.NewButton("Кнопка 1")
-	button1.SetSelectedFunc(func() {
+	dataView := tview.NewTextView()
+	dataView.SetBorder(true)
+	dataView.SetTitle(" Данные ")
+	dataView.SetTitleAlign(tview.AlignLeft)
+
+	generateButton := tview.NewButton("Сгенерировать")
+	generateButton.SetSelectedFunc(func() {
 		text := input.GetText()
+		text = ProcessGenerate(text)
+
 		dataView.SetText(text)
-		input.SetText("", false) // очистили поле
-		app.SetFocus(input)      // вернули фокус в поле ввода (по желанию)
+		input.SetText("", true)
+
+		app.SetFocus(input)
 	})
+	generateButton.SetBorder(true)
+	generateButton.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack))
+	generateButton.SetLabelColor(tcell.ColorWhite)
+	generateButton.SetLabelColorActivated(tcell.ColorDarkGray)
+	generateButton.SetBackgroundColorActivated(tcell.ColorBlack)
 
-	// Кнопка 2: пока заглушка
-	button2 := tview.NewButton("Кнопка 2")
-	button2.SetSelectedFunc(func() {
-		dataView.SetText("Нажата Кнопка 2 (пока заглушка)")
+	saveButton := tview.NewButton("Сохранить")
+	saveButton.SetSelectedFunc(func() {
+		text := input.GetText()
+		ProcessSave(text)
+
+		dataView.SetText("")
+		input.SetText("", true)
+		app.SetFocus(input)
 	})
+	saveButton.SetBorder(true)
+	saveButton.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack))
+	saveButton.SetLabelColor(tcell.ColorWhite)
+	saveButton.SetLabelColorActivated(tcell.ColorDarkGray)
+	saveButton.SetBackgroundColorActivated(tcell.ColorBlack)
 
-	// Горизонтальный Flex для первой строки
-	row1 := tview.NewFlex().
-		SetDirection(tview.FlexColumn).
-		AddItem(input, 0, 3, true). // input растягивается
-		AddItem(button1, 12, 0, false).
-		AddItem(button2, 12, 0, false)
+	nextButton := tview.NewButton("Следующее предложение")
+	nextButton.SetSelectedFunc(func() {
+		text := ProcessNext()
 
-	// Вертикальный Flex: строка 1 сверху, "Данные" снизу
-	layout := tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(row1, 5, 0, true).     // 5 строк высота под первую строку
-		AddItem(dataView, 0, 1, false) // остальное под "Данные"
+		dataView.SetText("")
+		input.SetText(text, true)
+		app.SetFocus(input)
+	})
+	nextButton.SetBorder(true)
+	nextButton.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack))
+	nextButton.SetLabelColor(tcell.ColorWhite)
+	nextButton.SetLabelColorActivated(tcell.ColorDarkGray)
+	nextButton.SetBackgroundColorActivated(tcell.ColorBlack)
 
-	if err := app.SetRoot(layout, true).SetFocus(input).Run(); err != nil {
+	grid := tview.NewGrid().
+		SetRows(-1, -1, -1, -6).
+		SetColumns(-8, -2).
+		SetBorders(false)
+
+	grid.AddItem(input, 0, 0, 3, 1, 3, 10, true)
+	grid.AddItem(generateButton, 0, 1, 1, 1, 1, 10, false)
+	grid.AddItem(saveButton, 1, 1, 1, 1, 1, 10, false)
+	grid.AddItem(nextButton, 2, 1, 1, 1, 1, 10, false)
+	grid.AddItem(dataView, 3, 0, 1, 2, 3, 10, false)
+
+	if err := app.SetRoot(grid, true).SetFocus(input).Run(); err != nil {
 		panic(err)
 	}
+}
+
+func ProcessGenerate(text string) string {
+	// TODO: пока заглушка
+	return fmt.Sprintf("Сгенерировано: %s", text)
+}
+
+func ProcessSave(text string) {
+	// TODO: пока заглушка
+}
+
+func ProcessNext() string {
+	// TODO: пока заглушка
+	return fmt.Sprintf("Новое предложение номер: %d", rand.Int())
 }
