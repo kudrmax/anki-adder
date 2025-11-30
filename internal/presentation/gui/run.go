@@ -65,7 +65,7 @@ func (a *App) build() {
 	a.createButtons()
 
 	screenProcessOneByOne := a.createScreenProcessOneByOneGrid()
-	screenAddSentence := a.createPlaceholderScreen("Экран 1 — заглушка")
+	screenAddSentence := a.createScreenAddSentenceGrid()
 	screenProcessButch := a.createPlaceholderScreen("Экран 2 — заглушка")
 
 	// pages со всеми экранами
@@ -128,11 +128,7 @@ func (a *App) createButtons() {
 	})
 
 	a.saveButton = makeButton("Сохранить", func() {
-		text := a.input.GetText()
-		_ = a.saver.Save(text) // TODO: обработка ошибки
-		a.dataView.SetText("")
-		a.input.SetText("", true)
-		a.app.SetFocus(a.input)
+		a.handleSave()
 	})
 
 	a.nextButton = makeButton("Следующее предложение", func() {
@@ -146,7 +142,16 @@ func (a *App) createButtons() {
 	})
 }
 
-// Твой текущий экран
+// общая логика сохранения — используется и на главном экране, и на Add sentence
+func (a *App) handleSave() {
+	text := a.input.GetText()
+	_ = a.saver.Save(text) // TODO: обработка ошибки
+	a.dataView.SetText("")
+	a.input.SetText("", true)
+	a.app.SetFocus(a.input)
+}
+
+// Экран 3: процессинг по одному (твой старый основной экран)
 func (a *App) createScreenProcessOneByOneGrid() *tview.Grid {
 	grid := tview.NewGrid()
 	grid.SetRows(-1, -1, -1, -6)
@@ -158,6 +163,29 @@ func (a *App) createScreenProcessOneByOneGrid() *tview.Grid {
 	grid.AddItem(a.saveButton, 1, 1, 1, 1, 1, 10, false)
 	grid.AddItem(a.nextButton, 2, 1, 1, 1, 1, 10, false)
 	grid.AddItem(a.dataView, 3, 0, 1, 2, 3, 10, false)
+
+	return grid
+}
+
+// Экран 1: добавление предложения — большой input по центру и кнопка Save под ним
+func (a *App) createScreenAddSentenceGrid() *tview.Grid {
+	grid := tview.NewGrid()
+	grid.SetRows(-9, -1)
+	grid.SetColumns(6)
+	grid.SetBorders(false)
+
+	saveBtn := tview.NewButton("Save")
+	saveBtn.SetSelectedFunc(func() {
+		a.handleSave()
+	})
+	saveBtn.SetBorder(true)
+	saveBtn.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack))
+	saveBtn.SetLabelColor(tcell.ColorWhite)
+	saveBtn.SetLabelColorActivated(tcell.ColorDarkGray)
+	saveBtn.SetBackgroundColorActivated(tcell.ColorBlack)
+
+	grid.AddItem(a.input, 0, 0, 1, 6, 0, 0, true)
+	grid.AddItem(saveBtn, 1, 5, 1, 1, 0, 0, false)
 
 	return grid
 }
@@ -195,7 +223,7 @@ func (a *App) createToolbar() *tview.Flex {
 	btn1 := makeTab("Add sentence", func() {
 		a.pages.SwitchToPage(screenAddSentenceSlug)
 	})
-	btn2 := makeTab("Process butch", func() {
+	btn2 := makeTab("Process batch", func() {
 		a.pages.SwitchToPage(screenProcessButchSlug)
 	})
 	btn3 := makeTab("Process one by one", func() {
@@ -209,7 +237,7 @@ func (a *App) createToolbar() *tview.Flex {
 	toolbar.AddItem(btn2, 0, 1, false)
 	toolbar.AddItem(btn3, 0, 1, false)
 
-	// ВАЖНО: без бордера, иначе съест высоту для кнопок
+	// без бордера, иначе съест высоту для кнопок
 	toolbar.SetBorder(false)
 
 	return toolbar
