@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/AlekSi/pointer"
 	"github.com/atotto/clipboard"
 )
 
@@ -19,12 +20,15 @@ func New(repo SentenceRepository) *UseCase {
 
 func (uc *UseCase) SaveSentence(sentence string, target *string) error {
 	sentence = ClearString(sentence)
-
 	if sentence == "" {
 		return nil
 	}
 
-	return uc.repo.Save(sentence)
+	if target != nil {
+		target = pointer.To(ClearString(*target))
+	}
+
+	return uc.repo.Save(sentence, target)
 }
 
 // Get возвращает первые n строк

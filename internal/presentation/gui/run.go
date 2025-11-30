@@ -24,8 +24,9 @@ type App struct {
 
 	pages *tview.Pages
 
-	input    *tview.TextArea
-	dataView *tview.TextView
+	inputSentence *tview.TextArea
+	inputTarget   *tview.TextArea
+	dataView      *tview.TextView
 
 	generateButton *tview.Button
 	saveButton     *tview.Button
@@ -67,7 +68,7 @@ func NewApp(
 func (a *App) Run() error {
 	return a.app.
 		SetRoot(a.root, true).
-		SetFocus(a.input).
+		SetFocus(a.inputSentence).
 		Run()
 }
 
@@ -85,9 +86,9 @@ func (a *App) build() {
 	a.createAreas()
 	a.createButtons()
 
-	screenProcessOneByOne := a.createScreenProcessOneByOneGrid()
 	screenAddSentence := a.createScreenAddSentenceGrid()
 	screenProcessButch := a.createScreenProcessBatchGrid()
+	screenProcessOneByOne := a.createScreenProcessOneByOneGrid()
 
 	// pages со всеми экранами
 	pages := tview.NewPages()
@@ -110,10 +111,16 @@ func (a *App) build() {
 
 func (a *App) createAreas() {
 	input := tview.NewTextArea()
-	input.SetTitle(" Ввод текста ")
+	input.SetTitle(" Type a sentence ")
 	input.SetTitleAlign(tview.AlignLeft)
 	input.SetBorder(true)
-	a.input = input
+	a.inputSentence = input
+
+	inputTarget := tview.NewTextArea()
+	inputTarget.SetTitle(" Type a target ")
+	inputTarget.SetTitleAlign(tview.AlignLeft)
+	inputTarget.SetBorder(true)
+	a.inputTarget = inputTarget
 
 	dataView := tview.NewTextView()
 	dataView.SetBorder(true)
@@ -138,14 +145,14 @@ func (a *App) createButtons() {
 
 	a.generateButton = makeButton("Сгенерировать", func() {
 		var err error
-		text := a.input.GetText()
+		sentence := a.inputSentence.GetText()
 		if a.gen != nil {
-			text, err = a.gen.GenerateNote(text, "")
+			sentence, err = a.gen.GenerateNote(sentence, "")
 			_ = err // TODO: обработка ошибки
 		}
-		a.dataView.SetText(text)
-		a.input.SetText("", true)
-		a.app.SetFocus(a.input)
+		a.dataView.SetText(sentence)
+		a.inputSentence.SetText("", true)
+		a.app.SetFocus(a.inputSentence)
 	})
 
 	a.saveButton = makeButton("Сохранить", func() {
@@ -158,18 +165,25 @@ func (a *App) createButtons() {
 			text = a.next.Next()
 		}
 		a.dataView.SetText("")
-		a.input.SetText(text, true)
-		a.app.SetFocus(a.input)
+		a.inputSentence.SetText(text, true)
+		a.app.SetFocus(a.inputSentence)
 	})
 }
 
 // общая логика сохранения — используется и на главном экране, и на Add sentence
 func (a *App) handleSave() {
-	text := a.input.GetText()
-	_ = a.saver.SaveSentence(text, nil) // TODO: обработка ошибки
+	sentence := a.inputSentence.GetText()
+	target := a.inputTarget.GetText()
+	_ = a.saver.SaveSentence(sentence, func() *string {
+		if target == "" {
+			return nil
+		}
+		return &target
+	}()) // TODO: обработка ошибки
 	a.dataView.SetText("")
-	a.input.SetText("", true)
-	a.app.SetFocus(a.input)
+	a.inputSentence.SetText("", true)
+	a.inputTarget.SetText("", true)
+	a.app.SetFocus(a.inputSentence)
 }
 
 // Экран 3: процессинг по одному (твой старый основной экран)
@@ -179,7 +193,7 @@ func (a *App) createScreenProcessOneByOneGrid() *tview.Grid {
 	grid.SetColumns(-8, -2)
 	grid.SetBorders(false)
 
-	grid.AddItem(a.input, 0, 0, 3, 1, 3, 10, true)
+	grid.AddItem(a.inputSentence, 0, 0, 3, 1, 3, 10, true)
 	grid.AddItem(a.generateButton, 0, 1, 1, 1, 1, 10, false)
 	grid.AddItem(a.saveButton, 1, 1, 1, 1, 1, 10, false)
 	grid.AddItem(a.nextButton, 2, 1, 1, 1, 1, 10, false)
@@ -188,14 +202,14 @@ func (a *App) createScreenProcessOneByOneGrid() *tview.Grid {
 	return grid
 }
 
-// Экран 1: добавление предложения — большой input и кнопка SaveSentence в правом нижнем углу
+// Экран 1: добавление предложения — большой inputSentence и кнопка SaveSentence в правом нижнем углу
 func (a *App) createScreenAddSentenceGrid() *tview.Grid {
 	grid := tview.NewGrid()
 	grid.SetRows(-9, -1)
-	grid.SetColumns(6)
+	grid.SetColumns(-2, -1)
 	grid.SetBorders(false)
 
-	saveBtn := tview.NewButton("SaveSentence")
+	saveBtn := tview.NewButton("Save")
 	saveBtn.SetSelectedFunc(func() {
 		a.handleSave()
 	})
@@ -205,8 +219,9 @@ func (a *App) createScreenAddSentenceGrid() *tview.Grid {
 	saveBtn.SetLabelColorActivated(tcell.ColorDarkGray)
 	saveBtn.SetBackgroundColorActivated(tcell.ColorBlack)
 
-	grid.AddItem(a.input, 0, 0, 1, 6, 0, 0, true)
-	grid.AddItem(saveBtn, 1, 5, 1, 1, 0, 0, false)
+	grid.AddItem(a.inputSentence, 0, 0, 1, 1, 0, 0, true)
+	grid.AddItem(a.inputTarget, 0, 1, 1, 1, 0, 0, true)
+	grid.AddItem(saveBtn, 1, 1, 1, 1, 0, 0, false)
 
 	return grid
 }
@@ -239,7 +254,7 @@ func (a *App) createScreenProcessBatchGrid() *tview.Grid {
 	btn2 := makeButton("Add sentences to Anki from clipboard", func() {
 		err := a.ankiAdderFromClipboard.AddNotesFromClipboard(models.Deck(a.cfg.Deck), models.NoteModel(a.cfg.NoteModel))
 		if err != nil {
-			a.input.SetTitle(err.Error()) // TODO: временно, удалить
+			a.inputSentence.SetTitle(err.Error()) // TODO: временно, удалить
 		}
 	})
 	btn3 := makeButton(fmt.Sprintf("Delete first %d sentences", count), func() {
@@ -300,7 +315,7 @@ func (a *App) createToolbar() *tview.Flex {
 	})
 	btn3 := makeTab("Process one by one", func() {
 		a.pages.SwitchToPage(screenProcessOneByOneSlug)
-		a.app.SetFocus(a.input)
+		a.app.SetFocus(a.inputSentence)
 	})
 
 	toolbar := tview.NewFlex()

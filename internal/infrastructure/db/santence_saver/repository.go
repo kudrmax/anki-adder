@@ -15,7 +15,7 @@ func New(filePath string) *Repository {
 	}
 }
 
-func (r *Repository) Save(sentence string) error {
+func (r *Repository) Save(sentence string, target *string) error {
 	f, err := os.OpenFile(
 		r.filePath,
 		os.O_WRONLY|os.O_APPEND,
@@ -26,7 +26,12 @@ func (r *Repository) Save(sentence string) error {
 	}
 	defer f.Close()
 
-	_, err = f.WriteString(sentence + "\n")
+	targetString := sentence
+	if target != nil {
+		targetString = *target
+	}
+
+	_, err = f.WriteString(sentence + ";" + targetString + "\n")
 	return err
 }
 
