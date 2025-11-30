@@ -8,6 +8,7 @@ import (
 	ankiconnectExternal "github.com/atselvan/ankiconnect"
 
 	"my/addToAnki/config"
+	"my/addToAnki/internal/controllers/anki_adder_from_clipboard"
 	"my/addToAnki/internal/infrastructure/clients/ankiconnect"
 	"my/addToAnki/internal/infrastructure/clients/ollama"
 	santence_saver_repository "my/addToAnki/internal/infrastructure/db/santence_saver"
@@ -26,7 +27,7 @@ func main() {
 	ankiConnectExternalClient := ankiconnectExternal.NewClient()
 	ankiConnectClient := ankiconnect.New(ankiConnectExternalClient)
 
-	ankiUseCase := anki_adder.NewUseCase(ankiConnectClient)
+	ankiAdderUseCase := anki_adder.NewUseCase(ankiConnectClient)
 	sentenceSaverUseCase := sentence_saver.New(santence_saver_repository.New(cfg.SentencesFilePath))
 
 	ollamaClient, err := ollama.NewClient("llama2", false)
@@ -39,7 +40,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cliRunner := cli.NewCLI(cfg, ankiUseCase, sentenceSaverUseCase, noteGeneratorUsecase)
+	ankiAdderFromClipboard := anki_adder_from_clipboard.New(cfg, ankiAdderUseCase)
+
+	cliRunner := cli.NewCLI(
+		cfg,
+		ankiAdderUseCase,
+		sentenceSaverUseCase,
+		noteGeneratorUsecase,
+		ankiAdderFromClipboard,
+	)
 	err = cliRunner.Run(os.Args[1:])
 	if err != nil {
 		log.Fatal(err)

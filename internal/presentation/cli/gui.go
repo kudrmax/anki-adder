@@ -20,9 +20,12 @@ func ProcessNext() string {
 
 func (cli *CLI) commandGUI(_ []string) error {
 	app := gui.NewApp(
+		cli.cfg,
 		cli.sentenceSaver,
 		cli.noteGenerator,
 		DefaultNextProvider{},
+		cli.ankiAdder,
+		cli.ankiAdderFromClipboard,
 	)
 
 	return app.Run()

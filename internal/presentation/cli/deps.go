@@ -10,10 +10,16 @@ type (
 	}
 
 	sentenceSaver interface {
-		Save(sentence string) error
+		SaveSentence(sentence string, target *string) error
+		CopyNFirstSentencesToClipboard(n int) error
+		DeleteNFirstSentences(n int) error
 	}
 
 	noteGenerator interface {
 		GenerateNote(sentence, target string) (string, error)
+	}
+
+	ankiAdderFromClipboard interface {
+		AddNotesFromClipboard(deck models.Deck, noteModel models.NoteModel) error
 	}
 )

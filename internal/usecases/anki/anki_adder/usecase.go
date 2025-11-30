@@ -33,7 +33,7 @@ func (uc *UseCase) AddNotes(deck models.Deck, noteModel models.NoteModel, data [
 		notesRow = append(notesRow, models.NoteRow{
 			Deck:      deck,
 			NoteModel: noteModel,
-			Fields:    fields,
+			Fields:    fields.ConvertHTMLTags(),
 		})
 	}
 

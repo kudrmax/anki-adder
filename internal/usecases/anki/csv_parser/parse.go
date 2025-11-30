@@ -5,7 +5,7 @@ import (
 
 	"github.com/privatesquare/bkst-go-utils/utils/errors"
 
-	modelsNew "my/addToAnki/internal/domain/models"
+	"my/addToAnki/internal/domain/models"
 	"my/addToAnki/internal/usecases/parsers/csv"
 )
 
@@ -21,7 +21,7 @@ func New(fieldNames []string, reader Reader) *CSVParser {
 	}
 }
 
-func (p *CSVParser) Parse() ([]modelsNew.Fields, error) {
+func (p *CSVParser) Parse() ([]models.Fields, error) {
 	r, err := p.Reader.Open()
 	if err != nil {
 		return nil, err
@@ -41,15 +41,15 @@ func (p *CSVParser) Parse() ([]modelsNew.Fields, error) {
 	return notes, nil
 }
 
-func (p *CSVParser) convert(records [][]string) ([]modelsNew.Fields, error) {
-	result := make([]modelsNew.Fields, 0, len(records))
+func (p *CSVParser) convert(records [][]string) ([]models.Fields, error) {
+	result := make([]models.Fields, 0, len(records))
 
 	for _, row := range records {
 		if len(row) != len(p.FieldNames) {
 			return nil, errors.New("invalid number of fields in cvs")
 		}
 
-		fields := make(modelsNew.Fields)
+		fields := make(models.Fields)
 		for i, val := range row {
 			fields[p.FieldNames[i]] = val
 		}
