@@ -25,6 +25,7 @@ func (cli *CLI) commandGUI(_ []string) error {
 		cli.noteGenerator,
 		DefaultNextProvider{},
 		cli.ankiAdder,
+		cli.ankiAdderFromClipboard,
 	)
 
 	return app.Run()

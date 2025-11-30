@@ -34,7 +34,7 @@ func (cli *CLI) commandSave(args []string) error {
 	case isFromNextArgument:
 		line = args[0]
 	}
-	err := cli.sentenceSaver.Save(line)
+	err := cli.sentenceSaver.SaveSentence(line, nil)
 	if err != nil {
 		return fmt.Errorf("save sentence: %w", err)
 	}

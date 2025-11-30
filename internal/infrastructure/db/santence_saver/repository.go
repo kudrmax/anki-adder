@@ -53,7 +53,7 @@ func (r *Repository) DeleteFirstNLines(n int) error {
 
 	result := ""
 	if len(lines) > n {
-		result = strings.Join(lines[10:], "\n")
+		result = strings.Join(lines[n:], "\n")
 	}
 
 	return os.WriteFile(r.filePath, []byte(result), 0644)

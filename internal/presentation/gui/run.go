@@ -1,19 +1,21 @@
 package gui
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 
 	"my/addToAnki/config"
 	"my/addToAnki/internal/domain/models"
-	"my/addToAnki/internal/infrastructure/source"
-	"my/addToAnki/internal/usecases/anki/csv_parser"
 )
 
 const (
 	screenAddSentenceSlug     = "screen1"
 	screenProcessButchSlug    = "screen2"
 	screenProcessOneByOneSlug = "main"
+
+	count = 3
 )
 
 type App struct {
@@ -29,22 +31,31 @@ type App struct {
 	saveButton     *tview.Button
 	nextButton     *tview.Button
 
-	saver     Saver
-	gen       Generator
-	next      NextProvider
-	ankiAdder ankiAdder
+	saver                  saver
+	gen                    generator
+	next                   nextProvider
+	ankiAdder              ankiAdder
+	ankiAdderFromClipboard ankiAdderFromClipboard
 
 	cfg config.Config
 }
 
-func NewApp(cfg config.Config, s Saver, g Generator, n NextProvider, ankiAdder ankiAdder) *App {
+func NewApp(
+	cfg config.Config,
+	saver saver,
+	generator generator,
+	nextProvider nextProvider,
+	ankiAdder ankiAdder,
+	ankiAdderFromClipboard ankiAdderFromClipboard,
+) *App {
 	a := &App{
-		app:       tview.NewApplication().EnableMouse(true),
-		cfg:       cfg,
-		saver:     s,
-		gen:       g,
-		next:      n,
-		ankiAdder: ankiAdder,
+		app:                    tview.NewApplication().EnableMouse(true),
+		cfg:                    cfg,
+		saver:                  saver,
+		gen:                    generator,
+		next:                   nextProvider,
+		ankiAdder:              ankiAdder,
+		ankiAdderFromClipboard: ankiAdderFromClipboard,
 	}
 
 	a.configureBorders()
@@ -76,13 +87,13 @@ func (a *App) build() {
 
 	screenProcessOneByOne := a.createScreenProcessOneByOneGrid()
 	screenAddSentence := a.createScreenAddSentenceGrid()
-	screenProcessButch := a.createScreenProcessBatchGrid() // <-- новый экран вместо заглушки
+	screenProcessButch := a.createScreenProcessBatchGrid()
 
 	// pages со всеми экранами
 	pages := tview.NewPages()
-	pages.AddPage(screenAddSentenceSlug, screenAddSentence, true, false)
+	pages.AddPage(screenAddSentenceSlug, screenAddSentence, true, true)
 	pages.AddPage(screenProcessButchSlug, screenProcessButch, true, false)
-	pages.AddPage(screenProcessOneByOneSlug, screenProcessOneByOne, true, true) // показываем главный по умолчанию
+	pages.AddPage(screenProcessOneByOneSlug, screenProcessOneByOne, true, false)
 	a.pages = pages
 
 	// тулбар сверху
@@ -155,7 +166,7 @@ func (a *App) createButtons() {
 // общая логика сохранения — используется и на главном экране, и на Add sentence
 func (a *App) handleSave() {
 	text := a.input.GetText()
-	_ = a.saver.Save(text) // TODO: обработка ошибки
+	_ = a.saver.SaveSentence(text, nil) // TODO: обработка ошибки
 	a.dataView.SetText("")
 	a.input.SetText("", true)
 	a.app.SetFocus(a.input)
@@ -177,14 +188,14 @@ func (a *App) createScreenProcessOneByOneGrid() *tview.Grid {
 	return grid
 }
 
-// Экран 1: добавление предложения — большой input и кнопка Save в правом нижнем углу
+// Экран 1: добавление предложения — большой input и кнопка SaveSentence в правом нижнем углу
 func (a *App) createScreenAddSentenceGrid() *tview.Grid {
 	grid := tview.NewGrid()
 	grid.SetRows(-9, -1)
 	grid.SetColumns(6)
 	grid.SetBorders(false)
 
-	saveBtn := tview.NewButton("Save")
+	saveBtn := tview.NewButton("SaveSentence")
 	saveBtn.SetSelectedFunc(func() {
 		a.handleSave()
 	})
@@ -222,27 +233,17 @@ func (a *App) createScreenProcessBatchGrid() *tview.Grid {
 	}
 
 	// Кнопки
-	btn1 := makeButton("Copy first 10 sentences to clipboard", func() {
-		_ = a.saver.Copy(10)
+	btn1 := makeButton(fmt.Sprintf("Copy first %d sentences to clipboard", count), func() {
+		_ = a.saver.CopyNFirstSentencesToClipboard(count)
 	})
 	btn2 := makeButton("Add sentences to Anki from clipboard", func() {
-		readerGetter := source.NewClipboardReaderGetter()
-		CSVParser := csv_parser.New(a.cfg.Fields, readerGetter)
-		fields, err := CSVParser.Parse()
+		err := a.ankiAdderFromClipboard.AddNotesFromClipboard(models.Deck(a.cfg.Deck), models.NoteModel(a.cfg.NoteModel))
 		if err != nil {
-			a.input.SetTitle(err.Error())
-		}
-		err = a.ankiAdder.AddNotes(
-			models.Deck(a.cfg.Deck),
-			models.NoteModel(a.cfg.NoteModel),
-			fields,
-		)
-		if err != nil {
-			a.input.SetTitle(err.Error())
+			a.input.SetTitle(err.Error()) // TODO: временно, удалить
 		}
 	})
-	btn3 := makeButton("Delete first 10 sentences", func() {
-		_ = a.saver.DeleteFirstNLines(10)
+	btn3 := makeButton(fmt.Sprintf("Delete first %d sentences", count), func() {
+		_ = a.saver.DeleteNFirstSentences(count)
 	})
 	//btn4 := makeButton("Open file", func() {})
 

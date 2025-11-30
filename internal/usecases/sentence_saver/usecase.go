@@ -17,7 +17,7 @@ func New(repo SentenceRepository) *UseCase {
 	}
 }
 
-func (uc *UseCase) Save(sentence string) error {
+func (uc *UseCase) SaveSentence(sentence string, target *string) error {
 	sentence = ClearString(sentence)
 
 	if sentence == "" {
@@ -40,7 +40,7 @@ func (uc *UseCase) Get(n int) ([]string, error) {
 
 // Copy копирует первые n строк
 // Если количество строк равно m, где m < n, то скопирует m строк
-func (uc *UseCase) Copy(n int) error {
+func (uc *UseCase) CopyNFirstSentencesToClipboard(n int) error {
 	sentences, err := uc.Get(n)
 	if err != nil {
 		return err
@@ -51,7 +51,7 @@ func (uc *UseCase) Copy(n int) error {
 	return clipboard.WriteAll(res)
 }
 
-func (uc *UseCase) DeleteFirstNLines(n int) error {
+func (uc *UseCase) DeleteNFirstSentences(n int) error {
 	return uc.repo.DeleteFirstNLines(n)
 }
 

@@ -15,10 +15,11 @@ const (
 )
 
 type CLI struct {
-	cfg           config.Config
-	ankiAdder     ankiAdder
-	sentenceSaver sentenceSaver
-	noteGenerator noteGenerator
+	cfg                    config.Config
+	ankiAdder              ankiAdder
+	sentenceSaver          sentenceSaver
+	noteGenerator          noteGenerator
+	ankiAdderFromClipboard ankiAdderFromClipboard
 }
 
 func NewCLI(
@@ -26,12 +27,14 @@ func NewCLI(
 	ankiAdder ankiAdder,
 	sentenceSaver sentenceSaver,
 	noteGenerator noteGenerator,
+	ankiAdderFromClipboard ankiAdderFromClipboard,
 ) *CLI {
 	return &CLI{
-		cfg:           cfg,
-		ankiAdder:     ankiAdder,
-		sentenceSaver: sentenceSaver,
-		noteGenerator: noteGenerator,
+		cfg:                    cfg,
+		ankiAdder:              ankiAdder,
+		sentenceSaver:          sentenceSaver,
+		noteGenerator:          noteGenerator,
+		ankiAdderFromClipboard: ankiAdderFromClipboard,
 	}
 }
 
