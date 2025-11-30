@@ -5,9 +5,17 @@ import (
 	"github.com/rivo/tview"
 )
 
+const (
+	screenAddSentenceSlug     = "screen1"
+	screenProcessButchSlug    = "screen2"
+	screenProcessOneByOneSlug = "main"
+)
+
 type App struct {
 	app  *tview.Application
-	root *tview.Grid
+	root tview.Primitive
+
+	pages *tview.Pages
 
 	input    *tview.TextArea
 	dataView *tview.TextView
@@ -36,7 +44,10 @@ func NewApp(s Saver, g Generator, n NextProvider) *App {
 }
 
 func (a *App) Run() error {
-	return a.app.SetRoot(a.root, true).SetFocus(a.input).Run()
+	return a.app.
+		SetRoot(a.root, true).
+		SetFocus(a.input).
+		Run()
 }
 
 func (a *App) configureBorders() {
@@ -49,9 +60,31 @@ func (a *App) configureBorders() {
 }
 
 func (a *App) build() {
+	// основной экран (текущий)
 	a.createAreas()
 	a.createButtons()
-	a.createGrid()
+
+	screenProcessOneByOne := a.createScreenProcessOneByOneGrid()
+	screenAddSentence := a.createPlaceholderScreen("Экран 1 — заглушка")
+	screenProcessButch := a.createPlaceholderScreen("Экран 2 — заглушка")
+
+	// pages со всеми экранами
+	pages := tview.NewPages()
+	pages.AddPage(screenAddSentenceSlug, screenAddSentence, true, false)
+	pages.AddPage(screenProcessButchSlug, screenProcessButch, true, false)
+	pages.AddPage(screenProcessOneByOneSlug, screenProcessOneByOne, true, true) // показываем главный по умолчанию
+	a.pages = pages
+
+	// тулбар сверху
+	toolbar := a.createToolbar()
+
+	// корневой layout: тулбар + pages
+	root := tview.NewFlex()
+	root.SetDirection(tview.FlexRow)
+	root.AddItem(toolbar, 3, 1, false)
+	root.AddItem(a.pages, 0, 1, true)
+
+	a.root = root
 }
 
 func (a *App) createAreas() {
@@ -87,7 +120,7 @@ func (a *App) createButtons() {
 		text := a.input.GetText()
 		if a.gen != nil {
 			text, err = a.gen.GenerateNote(text, "")
-			_ = err
+			_ = err // TODO: обработка ошибки
 		}
 		a.dataView.SetText(text)
 		a.input.SetText("", true)
@@ -96,7 +129,7 @@ func (a *App) createButtons() {
 
 	a.saveButton = makeButton("Сохранить", func() {
 		text := a.input.GetText()
-		_ = a.saver.Save(text)
+		_ = a.saver.Save(text) // TODO: обработка ошибки
 		a.dataView.SetText("")
 		a.input.SetText("", true)
 		a.app.SetFocus(a.input)
@@ -113,11 +146,12 @@ func (a *App) createButtons() {
 	})
 }
 
-func (a *App) createGrid() {
-	grid := tview.NewGrid().
-		SetRows(-1, -1, -1, -6).
-		SetColumns(-8, -2).
-		SetBorders(false)
+// Твой текущий экран
+func (a *App) createScreenProcessOneByOneGrid() *tview.Grid {
+	grid := tview.NewGrid()
+	grid.SetRows(-1, -1, -1, -6)
+	grid.SetColumns(-8, -2)
+	grid.SetBorders(false)
 
 	grid.AddItem(a.input, 0, 0, 3, 1, 3, 10, true)
 	grid.AddItem(a.generateButton, 0, 1, 1, 1, 1, 10, false)
@@ -125,5 +159,58 @@ func (a *App) createGrid() {
 	grid.AddItem(a.nextButton, 2, 1, 1, 1, 1, 10, false)
 	grid.AddItem(a.dataView, 3, 0, 1, 2, 3, 10, false)
 
-	a.root = grid
+	return grid
+}
+
+// Плейсхолдер-экраны (полноценный grid, потом заменишь содержимое)
+func (a *App) createPlaceholderScreen(text string) tview.Primitive {
+	tv := tview.NewTextView()
+	tv.SetTextAlign(tview.AlignCenter)
+	tv.SetText(text)
+
+	grid := tview.NewGrid()
+	grid.SetRows(0)
+	grid.SetColumns(0)
+	grid.SetBorders(false)
+	grid.AddItem(tv, 0, 0, 1, 1, 0, 0, true)
+
+	return grid
+}
+
+// Тулбар с тремя кнопками, переключающими страницы
+func (a *App) createToolbar() *tview.Flex {
+	styleButton := tcell.StyleDefault.Background(tcell.ColorBlack)
+
+	makeTab := func(label string, handler func()) *tview.Button {
+		btn := tview.NewButton(label)
+		btn.SetSelectedFunc(handler)
+		btn.SetBorder(true)
+		btn.SetStyle(styleButton)
+		btn.SetLabelColor(tcell.ColorWhite)
+		btn.SetLabelColorActivated(tcell.ColorDarkGray)
+		btn.SetBackgroundColorActivated(tcell.ColorBlack)
+		return btn
+	}
+
+	btn1 := makeTab("Add sentence", func() {
+		a.pages.SwitchToPage(screenAddSentenceSlug)
+	})
+	btn2 := makeTab("Process butch", func() {
+		a.pages.SwitchToPage(screenProcessButchSlug)
+	})
+	btn3 := makeTab("Process one by one", func() {
+		a.pages.SwitchToPage(screenProcessOneByOneSlug)
+		a.app.SetFocus(a.input)
+	})
+
+	toolbar := tview.NewFlex()
+	toolbar.SetDirection(tview.FlexColumn)
+	toolbar.AddItem(btn1, 0, 1, false)
+	toolbar.AddItem(btn2, 0, 1, false)
+	toolbar.AddItem(btn3, 0, 1, false)
+
+	// ВАЖНО: без бордера, иначе съест высоту для кнопок
+	toolbar.SetBorder(false)
+
+	return toolbar
 }
