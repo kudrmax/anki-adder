@@ -66,7 +66,7 @@ func (a *App) build() {
 
 	screenProcessOneByOne := a.createScreenProcessOneByOneGrid()
 	screenAddSentence := a.createScreenAddSentenceGrid()
-	screenProcessButch := a.createPlaceholderScreen("Экран 2 — заглушка")
+	screenProcessButch := a.createScreenProcessBatchGrid() // <-- новый экран вместо заглушки
 
 	// pages со всеми экранами
 	pages := tview.NewPages()
@@ -167,7 +167,7 @@ func (a *App) createScreenProcessOneByOneGrid() *tview.Grid {
 	return grid
 }
 
-// Экран 1: добавление предложения — большой input по центру и кнопка Save под ним
+// Экран 1: добавление предложения — большой input и кнопка Save в правом нижнем углу
 func (a *App) createScreenAddSentenceGrid() *tview.Grid {
 	grid := tview.NewGrid()
 	grid.SetRows(-9, -1)
@@ -190,7 +190,49 @@ func (a *App) createScreenAddSentenceGrid() *tview.Grid {
 	return grid
 }
 
-// Плейсхолдер-экраны (полноценный grid, потом заменишь содержимое)
+// Экран 2: batch — четыре колонки с кнопками и текстом, плюс кнопка ниже в последней колонке
+func (a *App) createScreenProcessBatchGrid() *tview.Grid {
+	grid := tview.NewGrid()
+	grid.SetRows(-4, -1, -1, -3)
+	// четыре колонки одинаковой ширины
+	grid.SetColumns(-1, -1, -1, -1)
+	grid.SetBorders(false)
+
+	styleButton := tcell.StyleDefault.Background(tcell.ColorBlack)
+
+	makeButton := func(label string, handler func()) *tview.Button {
+		btn := tview.NewButton(label)
+		btn.SetSelectedFunc(handler)
+		btn.SetBorder(true)
+		btn.SetStyle(styleButton)
+		btn.SetLabelColor(tcell.ColorWhite)
+		btn.SetLabelColorActivated(tcell.ColorDarkGray)
+		btn.SetBackgroundColorActivated(tcell.ColorBlack)
+		return btn
+	}
+
+	// Кнопки
+	btn1 := makeButton("Copy first 10 sentences to clipboard", func() {})
+	btn2 := makeButton("Add sentences to Anki from clipboard", func() {})
+	btn3 := makeButton("Delete first 10 sentences", func() {})
+	//btn4 := makeButton("Open file", func() {})
+
+	// Текст во второй колонке (между кнопками)
+	text := tview.NewTextView()
+	text.SetTextAlign(tview.AlignCenter)
+	text.SetText("Go to ChatGPT and generate CSV")
+
+	// Первый «контентный» ряд (row 1)
+	grid.AddItem(btn1, 1, 0, 1, 1, 0, 0, false) // можно дать фокус первой кнопке
+	grid.AddItem(text, 1, 1, 1, 1, 0, 0, false)
+	grid.AddItem(btn2, 1, 2, 1, 1, 0, 0, false)
+	grid.AddItem(btn3, 1, 3, 1, 1, 0, 0, false)
+	//grid.AddItem(btn4, 2, 3, 1, 1, 0, 0, false)
+
+	return grid
+}
+
+// Плейсхолдер-экраны (если вдруг ещё пригодится)
 func (a *App) createPlaceholderScreen(text string) tview.Primitive {
 	tv := tview.NewTextView()
 	tv.SetTextAlign(tview.AlignCenter)
@@ -236,8 +278,6 @@ func (a *App) createToolbar() *tview.Flex {
 	toolbar.AddItem(btn1, 0, 1, false)
 	toolbar.AddItem(btn2, 0, 1, false)
 	toolbar.AddItem(btn3, 0, 1, false)
-
-	// без бордера, иначе съест высоту для кнопок
 	toolbar.SetBorder(false)
 
 	return toolbar
