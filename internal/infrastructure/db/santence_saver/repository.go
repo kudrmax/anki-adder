@@ -2,6 +2,7 @@ package santence_saver
 
 import (
 	"os"
+	"strings"
 )
 
 type Repository struct {
@@ -27,4 +28,19 @@ func (r *Repository) Save(sentence string) error {
 
 	_, err = f.WriteString(sentence + "\n")
 	return err
+}
+
+func (r *Repository) GetAll() ([]string, error) {
+	dataBytes, err := os.ReadFile(r.filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	data := string(dataBytes)
+	res := strings.Split(data, "\n")
+	if len(res) == 0 {
+		return nil, nil
+	}
+
+	return res, nil
 }

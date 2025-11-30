@@ -11,6 +11,7 @@ type (
 
 	sentenceSaver interface {
 		Save(sentence string) error
+		Copy(n int) error
 	}
 
 	noteGenerator interface {

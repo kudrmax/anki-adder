@@ -212,7 +212,9 @@ func (a *App) createScreenProcessBatchGrid() *tview.Grid {
 	}
 
 	// Кнопки
-	btn1 := makeButton("Copy first 10 sentences to clipboard", func() {})
+	btn1 := makeButton("Copy first 10 sentences to clipboard", func() {
+		_ = a.saver.Copy(10)
+	})
 	btn2 := makeButton("Add sentences to Anki from clipboard", func() {})
 	btn3 := makeButton("Delete first 10 sentences", func() {})
 	//btn4 := makeButton("Open file", func() {})
