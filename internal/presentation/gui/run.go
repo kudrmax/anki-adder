@@ -3,6 +3,11 @@ package gui
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+
+	"my/addToAnki/config"
+	"my/addToAnki/internal/domain/models"
+	"my/addToAnki/internal/infrastructure/source"
+	"my/addToAnki/internal/usecases/anki/csv_parser"
 )
 
 const (
@@ -24,17 +29,22 @@ type App struct {
 	saveButton     *tview.Button
 	nextButton     *tview.Button
 
-	saver Saver
-	gen   Generator
-	next  NextProvider
+	saver     Saver
+	gen       Generator
+	next      NextProvider
+	ankiAdder ankiAdder
+
+	cfg config.Config
 }
 
-func NewApp(s Saver, g Generator, n NextProvider) *App {
+func NewApp(cfg config.Config, s Saver, g Generator, n NextProvider, ankiAdder ankiAdder) *App {
 	a := &App{
-		app:   tview.NewApplication().EnableMouse(true),
-		saver: s,
-		gen:   g,
-		next:  n,
+		app:       tview.NewApplication().EnableMouse(true),
+		cfg:       cfg,
+		saver:     s,
+		gen:       g,
+		next:      n,
+		ankiAdder: ankiAdder,
 	}
 
 	a.configureBorders()
@@ -215,7 +225,22 @@ func (a *App) createScreenProcessBatchGrid() *tview.Grid {
 	btn1 := makeButton("Copy first 10 sentences to clipboard", func() {
 		_ = a.saver.Copy(10)
 	})
-	btn2 := makeButton("Add sentences to Anki from clipboard", func() {})
+	btn2 := makeButton("Add sentences to Anki from clipboard", func() {
+		readerGetter := source.NewClipboardReaderGetter()
+		CSVParser := csv_parser.New(a.cfg.Fields, readerGetter)
+		fields, err := CSVParser.Parse()
+		if err != nil {
+			a.input.SetTitle(err.Error())
+		}
+		err = a.ankiAdder.AddNotes(
+			models.Deck(a.cfg.Deck),
+			models.NoteModel(a.cfg.NoteModel),
+			fields,
+		)
+		if err != nil {
+			a.input.SetTitle(err.Error())
+		}
+	})
 	btn3 := makeButton("Delete first 10 sentences", func() {
 		_ = a.saver.DeleteFirstNLines(10)
 	})
