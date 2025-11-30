@@ -44,3 +44,17 @@ func (r *Repository) GetAll() ([]string, error) {
 
 	return res, nil
 }
+
+func (r *Repository) DeleteFirstNLines(n int) error {
+	lines, err := r.GetAll()
+	if err != nil {
+		return err
+	}
+
+	result := ""
+	if len(lines) > n {
+		result = strings.Join(lines[10:], "\n")
+	}
+
+	return os.WriteFile(r.filePath, []byte(result), 0644)
+}

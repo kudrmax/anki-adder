@@ -3,6 +3,7 @@ package gui
 type Saver interface {
 	Save(string) error
 	Copy(n int) error
+	DeleteFirstNLines(n int) error
 }
 
 type Generator interface {

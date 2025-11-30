@@ -51,6 +51,10 @@ func (uc *UseCase) Copy(n int) error {
 	return clipboard.WriteAll(res)
 }
 
+func (uc *UseCase) DeleteFirstNLines(n int) error {
+	return uc.repo.DeleteFirstNLines(n)
+}
+
 // ClearString clear a string
 // "some sentence" -> "some sentence"
 // " some sentence    " -> "some sentence"
