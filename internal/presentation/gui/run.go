@@ -27,6 +27,7 @@ type App struct {
 	inputSentence *tview.TextArea
 	inputTarget   *tview.TextArea
 	dataView      *tview.TextView
+	errorView     *tview.TextView
 
 	generateButton *tview.Button
 	saveButton     *tview.Button
@@ -127,6 +128,13 @@ func (a *App) createAreas() {
 	dataView.SetTitle(" Данные ")
 	dataView.SetTitleAlign(tview.AlignLeft)
 	a.dataView = dataView
+
+	errorView := tview.NewTextView()
+	errorView.SetBorder(true)
+	errorView.SetTitle(" Ошибка ")
+	errorView.SetTitleAlign(tview.AlignLeft)
+	a.errorView = errorView
+
 }
 
 func (a *App) createButtons() {
@@ -148,7 +156,9 @@ func (a *App) createButtons() {
 		sentence := a.inputSentence.GetText()
 		if a.gen != nil {
 			sentence, err = a.gen.GenerateNote(sentence, "")
-			_ = err // TODO: обработка ошибки
+		}
+		if err != nil {
+			a.errorView.SetText(err.Error())
 		}
 		a.dataView.SetText(sentence)
 		a.inputSentence.SetText("", true)
@@ -174,12 +184,15 @@ func (a *App) createButtons() {
 func (a *App) handleSave() {
 	sentence := a.inputSentence.GetText()
 	target := a.inputTarget.GetText()
-	_ = a.saver.SaveSentence(sentence, func() *string {
+	err := a.saver.SaveSentence(sentence, func() *string {
 		if target == "" {
 			return nil
 		}
 		return &target
 	}()) // TODO: обработка ошибки
+	if err != nil {
+		a.errorView.SetText(err.Error())
+	}
 	a.dataView.SetText("")
 	a.inputSentence.SetText("", true)
 	a.inputTarget.SetText("", true)
@@ -229,7 +242,7 @@ func (a *App) createScreenAddSentenceGrid() *tview.Grid {
 // Экран 2: batch — четыре колонки с кнопками и текстом, плюс кнопка ниже в последней колонке
 func (a *App) createScreenProcessBatchGrid() *tview.Grid {
 	grid := tview.NewGrid()
-	grid.SetRows(-4, -1, -1, -3)
+	grid.SetRows(-4, -1, -4, -1)
 	// четыре колонки одинаковой ширины
 	grid.SetColumns(-1, -1, -1, -1)
 	grid.SetBorders(false)
@@ -249,16 +262,22 @@ func (a *App) createScreenProcessBatchGrid() *tview.Grid {
 
 	// Кнопки
 	btn1 := makeButton(fmt.Sprintf("Copy first %d sentences to clipboard", count), func() {
-		_ = a.saver.CopyNFirstSentencesToClipboard(count)
+		err := a.saver.CopyNFirstSentencesToClipboard(count)
+		if err != nil {
+			a.errorView.SetText(err.Error())
+		}
 	})
 	btn2 := makeButton("Add sentences to Anki from clipboard", func() {
 		err := a.ankiAdderFromClipboard.AddNotesFromClipboard(models.Deck(a.cfg.Deck), models.NoteModel(a.cfg.NoteModel))
 		if err != nil {
-			a.inputSentence.SetTitle(err.Error()) // TODO: временно, удалить
+			a.errorView.SetText(err.Error())
 		}
 	})
 	btn3 := makeButton(fmt.Sprintf("Delete first %d sentences", count), func() {
-		_ = a.saver.DeleteNFirstSentences(count)
+		err := a.saver.DeleteNFirstSentences(count)
+		if err != nil {
+			a.errorView.SetText(err.Error())
+		}
 	})
 	//btn4 := makeButton("Open file", func() {})
 
@@ -272,6 +291,7 @@ func (a *App) createScreenProcessBatchGrid() *tview.Grid {
 	grid.AddItem(text, 1, 1, 1, 1, 0, 0, false)
 	grid.AddItem(btn2, 1, 2, 1, 1, 0, 0, false)
 	grid.AddItem(btn3, 1, 3, 1, 1, 0, 0, false)
+	grid.AddItem(a.errorView, 3, 0, 1, 4, 0, 0, false)
 	//grid.AddItem(btn4, 2, 3, 1, 1, 0, 0, false)
 
 	return grid

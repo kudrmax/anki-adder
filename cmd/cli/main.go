@@ -11,7 +11,7 @@ import (
 	"my/addToAnki/internal/controllers/anki_adder_from_clipboard"
 	"my/addToAnki/internal/infrastructure/clients/ankiconnect"
 	"my/addToAnki/internal/infrastructure/clients/ollama"
-	santence_saver_repository "my/addToAnki/internal/infrastructure/db/santence_saver"
+	sentence_saver_repository "my/addToAnki/internal/infrastructure/db/sentence_saver"
 	"my/addToAnki/internal/presentation/cli"
 	"my/addToAnki/internal/usecases/anki/anki_adder"
 	"my/addToAnki/internal/usecases/anki/note_generator"
@@ -28,7 +28,7 @@ func main() {
 	ankiConnectClient := ankiconnect.New(ankiConnectExternalClient)
 
 	ankiAdderUseCase := anki_adder.NewUseCase(ankiConnectClient)
-	sentenceSaverUseCase := sentence_saver.New(santence_saver_repository.New(cfg.SentencesFilePath))
+	sentenceSaverUseCase := sentence_saver.New(sentence_saver_repository.New(cfg.SentencesFilePath))
 
 	ollamaClient, err := ollama.NewClient("llama2", false)
 	if err != nil {

@@ -1,4 +1,4 @@
-package santence_saver
+package sentence_saver
 
 import (
 	"os"
